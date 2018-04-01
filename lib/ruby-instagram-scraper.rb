@@ -8,43 +8,49 @@ module RubyInstagramScraper
   def self.search ( query, proxy = nil )
     # return false unless query
 
-    url = add_params("https://www.instagram.com/web/search/topsearch/", {query: query})
+    url = add_params("/web/search/topsearch/", {query: query})
 
-    JSON.parse( open_with_proxy( url, proxy ).read )
+    get_json_response(url, proxy)
   end
 
   def self.get_feed ( username, max_id = nil, proxy = nil )
-    url = add_params("#{BASE_URL}/#{ username }/", {__a: 1, max_id: max_id})
+    url = add_params("/#{ username }/", {__a: 1, max_id: max_id})
 
-    JSON.parse( open_with_proxy( url, proxy ).read )
+    get_json_response(url, proxy)
   end
 
   def self.get_user_media_nodes ( username, max_id = nil, proxy = nil )
-    url = add_params("#{BASE_URL}/#{ username }/", {__a: 1, max_id: max_id})
+    url = add_params("/#{ username }/", {__a: 1, max_id: max_id})
 
-    JSON.parse( open_with_proxy( url, proxy ).read )["user"]["media"]["nodes"]
+    get_json_response(url, proxy)["user"]["media"]["nodes"]
   end
 
   def self.get_user ( username, max_id = nil, proxy = nil )
-    url = add_params("#{BASE_URL}/#{ username }/", {__a: 1, max_id: max_id})
+    url = add_params("/#{ username }/", {__a: 1, max_id: max_id})
 
-    JSON.parse( open_with_proxy( url, proxy ).read )["user"]
+    get_json_response(url, proxy)["user"]
+  end
+
+  def self.get_top_tag_media_nodes ( tag, max_id = nil, proxy = nil )
+    url = add_params("/explore/tags/#{ tag }/", {__a: 1, max_id: max_id})
+
+    get_json_response(url, proxy)['graphql']['hashtag']['edge_hashtag_to_top_posts']['edges'].map { |i| i['node'] }
   end
 
   def self.get_tag_media_nodes ( tag, max_id = nil, proxy = nil )
-    url = add_params("#{BASE_URL}/explore/tags/#{ tag }/", {__a: 1, max_id: max_id})
+    url = add_params("/explore/tags/#{ tag }/", {__a: 1, max_id: max_id})
 
-    JSON.parse( open_with_proxy( url, proxy ).read )["tag"]["media"]["nodes"]
+    get_json_response(url, proxy)['graphql']['hashtag']['edge_hashtag_to_media']['edges'].map { |i| i['node'] }
   end
 
   def self.get_media ( code, proxy = nil )
-    url = add_params("#{BASE_URL}/p/#{ code }/", {__a: 1})
-    JSON.parse( open_with_proxy( url, proxy ).read )["graphql"]["shortcode_media"]
+    url = add_params("/p/#{ code }/", {__a: 1})
+    get_json_response(url, proxy)["graphql"]["shortcode_media"]
   end
 
   def self.get_media_comments ( code, count = 40, proxy = nil )
-    url = add_params("#{BASE_URL}/p/#{ code }/", {__a: 1})
-    JSON.parse(open_with_proxy( url, proxy ).read)["graphql"]["shortcode_media"]["edge_media_to_comment"]
+    url = add_params("/p/#{ code }/", {__a: 1})
+    get_json_response(url, proxy)["graphql"]["shortcode_media"]["edge_media_to_comment"]
   end
 
   def self.add_params(url, params = {})
@@ -54,7 +60,7 @@ module RubyInstagramScraper
       q = "?"
       query += "&#{key}=#{val}"
     end
-    url + q + query
+    BASE_URL + url + q + query
   end
 
   def self.open_with_proxy(url, proxy = nil)
@@ -76,5 +82,10 @@ module RubyInstagramScraper
       return proxy_uri
     end
   end
-  
+
+  private
+
+  def self.get_json_response(url, proxy)
+    JSON.parse(open_with_proxy(url, proxy).read)
+  end
 end
